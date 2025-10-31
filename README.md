@@ -7,6 +7,34 @@
 * NEW! switch.startup - Configures a container that simulates a switch (works as a VLAN-aware bridge)
 * shared/ - Shared folder between containers (empty)
 
+## NETWORK ARCHITECTURE
+                          +-------------------------+
+                          |     ROUTER/FIREWALL     |
+                          |-------------------------|
+                          | GW VLAN 10: 203.0.113.1 |
+                          | GW VLAN 20: 10.0.1.1    |
+                          | GW VLAN 30: 172.16.1.1  |
+                          +-------------------------+
+                                     |
+                                     | Trunk Link
+                                     | (VLANs 10, 20, 30)
+                                     |
+                          +---------------------+
+                          |   SWITCH PRINCIPALE |
+                          +---------------------+
+                                     |
+         +---------------------------+---------------------------+
+         |                           |                           |
+  (Access Port VLAN 10)     (Access Port VLAN 20)     (Access Port VLAN 30)
+         |                           |                           |
+  +----------------+          +----------------+          +------------------+
+  | client_public  |          |   webserver    |          |  client_private  |
+  +----------------+          +----------------+          +------------------+
+  |IP: 203.0.113.10|          | IP: 10.0.1.10  |          | IP: 172.16.1.10  |
+  +----------------+          +----------------+          +------------------+
+
+
+
 ## NETWORK CONFIGURATION:
 * VLAN 10 Public: 203.0.113.0/24 (simulates the internet/external users)
    * Router Gateway: 203.0.113.1
@@ -19,12 +47,12 @@
    * Private Client: 172.16.1.10
 
 ---
-
+## Basics
 - START THE LAB -> kathara lstart
    - If the previous command gives a permission error -> kathara lstart --privileged
 - SHUTDOWN THE LAB -> kathara lclean
 
-## Expected router log
+### Expected router log
 ```
 --- Startup Commands Log
 ++ ip link set eth0 up
