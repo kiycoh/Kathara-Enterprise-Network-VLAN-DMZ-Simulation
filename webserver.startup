@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# --------------------------------------------------------------------
+# CONFIGURATION SCRIPT: WEB SERVER DMZ
+#
+# This script configures the web server placed in the DMZ.
+# It is executed automatically when the Kathara container is started.
+#
+# ROLE: Public web server accessible from the internet and internal network.
+# NETWORK: 10.0.1.0/24 (DMZ)
+# IP: 10.0.1.10/24
+# GATEWAY: 10.0.1.1 (router).
+# SERVICES: Apache Web Server (port 80).
+# --------------------------------------------------------------------
+
+# NETWORK CONFIGURATION
+# configuration of network interface eth0
+ip addr add 10.0.1.10/24 dev eth0
+
+# Activating the network interface.
+ip link set eth0 up
+
+# Default gateway configuration.
+# Allows the server to respond to requests from other networks.
+ip route add default via 10.0.1.1
+
+# SOFTWARE INSTALLATION
+# updating system repositories (silent)
+apt-get update > /dev/null 2>&1
+
+# Installing Apache Web Server (silent)
+apt-get install -y apache2 > /dev/null 2>&1
+
+# WEB TEST CONTENT CONFIGURATION.
+# Creating a test message for the web page.
+echo "Server Web DMZ: Connessione riuscita alla DMZ!" > /var/www/html/index.html
+
+# STARTING SERVICES
+# starting the Apache Web Server service
+service apache2 start > /dev/null 2>&1
+
+# Configuration occurred message
+echo "Server web configurato e avviato su http://10.0.1.10"
+
+# --------------------------------------------------------------------
+# DMZ WEB SERVER FEATURES:
+#
+# * ACCESSIBILITY:
+# * Accessible from public network (203.0.113.0/24) via HTTP (port 80).
+# * Accessible from private network (172.16.1.0/24) via HTTP (port 80)
+# * CANNOT initiate connections to the private network (blocked by firewall)
+# * CANNOT access the public network directly (DMZ isolation).
+#
+# * DMZ FUNCTION:
+# * The server is placed in a demilitarized zone that:
+# * Exposes public services (web server).
+# * Isolates the internal network from direct external access.
+# * Prevents lateral movement in case of compromise.
+#
+# * TEST CONNECTIVITY:
+# * From client_public: curl http://10.0.1.10
+# * From client_private: curl http://10.0.1.10
+# --------------------------------------------------------------------

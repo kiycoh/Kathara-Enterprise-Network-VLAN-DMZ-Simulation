@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# --------------------------------------------------------------------
+# CONFIGURATION SCRIPT: CLIENT PUBLIC
+#
+# This script configures the client in the public network.
+# It is executed automatically when the Kathara container is started.
+#
+# ROLE: Represents an external/internet user.
+# NETWORK: 203.0.113.0/24 (VLAN 10 Public).
+# IP: 203.0.113.10/24
+# GATEWAY: 203.0.113.1 (router)
+# --------------------------------------------------------------------
+
+# Configure the network interface eth0.
+# Assign the static IP address to the public client.
+ip addr add 203.0.113.10/24 dev eth0
+
+# Activating the network interface.
+ip link set eth0 up
+
+# Default gateway configuration.
+# All traffic to external networks is forwarded to the router (203.0.113.1).
+ip route add default via 203.0.113.1
+
+# Configuration confirmation message
+echo "Client Public configurato con IP 203.0.113.10"
+
+# --------------------------------------------------------------------
+# CLIENT NETWORK CAPABILITIES PUBLIC:
+# * Can access the web server in the DMZ (10.0.1.10:80).
+# * CANNOT access the private network (172.16.1.0/24) - isolation
+# * Cannot initiate connections to the DMZ on other ports.
+#
+# NOTE: simulates external users who can only access the services
+# public services exposed in the DMZ, while keeping the internal network protected.
+# --------------------------------------------------------------------

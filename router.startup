@@ -1,0 +1,63 @@
+#!/bin/bash
+
+#CONFIGURAZIONE INTERFACCE VLAN "Router on a stick"
+
+# remove comment to enable kernel module for 802.1q tagging (usually static).
+# modprobe 8021q
+
+# Activates the main physical interface (the trunk).
+ip link set eth0 up
+
+# Create the virtual sub-interfaces, one for each VLAN.
+# The syntax is: ip link add link <if_physics> name <sub_name> type vlan id <vlan_id>.
+ip link add link eth0 name eth0.10 type vlan id 10 # VLAN 10 - Public
+ip link add link eth0 name eth0.20 type vlan id 20 # VLAN 20 - DMZ
+ip link add link eth0 name eth0.30 type vlan id 30 # VLAN 30 - Private
+
+# Assigns gateway IP addresses to the respective sub-interfaces.
+ip addr add 203.0.113.1/24 dev eth0.10
+ip addr add 10.0.1.1/24 dev eth0.20
+ip addr add 172.16.1.1/24 dev eth0.30
+
+# Activate sub-interfaces.
+ip link set eth0.10 up
+ip link set eth0.20 up
+ip link set eth0.30 up
+
+# ENABLE IP FORWARDING
+# Allows the router to forward packets between interfaces.
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+
+# FIREWALL CONFIGURATION (IPTABLES)
+
+# Clean up existing rules
+iptables -F
+iptables -t nat -F
+
+# Set default policy: block all traffic that is not explicitly allowed.
+iptables -P FORWARD DROP
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+
+# Allow return traffic for already established connections (FUNDAMENTAL).
+iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# Rule 1: Public -> DMZ (HTTP only).
+# Traffic enters from eth0.10 (Public) and exits from eth0.20 (DMZ).
+iptables -A FORWARD -i eth0.10 -o eth0.20 -d 10.0.1.10 -p tcp --dport 80 -j ACCEPT
+
+# Rule 2: Private -> DMZ (HTTP only).
+# Traffic enters from eth0.30 (Private) and exits from eth0.20 (DMZ).
+iptables -A FORWARD -i eth0.30 -o eth0.20 -d 10.0.1.10 -p tcp --dport 80 -j ACCEPT
+
+# Rule 3: Private -> Public (All traffic).
+# Traffic enters from eth0.30 (Private) and exits from eth0.10 (Public).
+iptables -A FORWARD -i eth0.30 -o eth0.10 -j ACCEPT
+
+# Rule 4: NAT (Masquerade).
+# Hide the private IPs of the internal network when they go out on the Internet.
+# Traffic going out of the public interface (eth0.10) is "masked"
+iptables -t nat -A POSTROUTING -o eth0.10 -j MASQUERADE
+
+echo "Router on a stick on!"

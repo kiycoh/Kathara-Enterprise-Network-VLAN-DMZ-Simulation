@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# --------------------------------------------------------------------
+# MAIN SWITCH CONFIGURATION SCRIPT
+#
+# The script configures the 'switch' container to operate as a
+# VLAN-aware bridge (Layer 2 managed switch).
+#
+# ROLE: shunts traffic between the router and dedicated VLANs.
+# eth0: TRUNK port to the router (accepts VLANs 10, 20, 30).
+# eth1: ACCESS port for VLAN 10 (Public).
+# eth2: ACCESS port for VLAN 20 (DMZ)
+# eth3: ACCESS port for VLAN 30 (Private)
+# --------------------------------------------------------------------
+
+# Load the kernel module for VLAN management (802.1q), if missing remove comment.
+# modprobe 8021q
+
+# BRIDGE CREATION
+# Create a virtual bridge interface named br0.
+ip link add name br0 type bridge
+
+# Enable VLAN filtering functionality on br0.
+# Turns the bridge into a VLAN-aware switch.
+ip link set br0 type bridge vlan_filtering 1
+
+# ADDITION OF PHYSICAL INTERFACES TO THE BRIDGE
+ip link set dev eth0 master br0 # Adds trunk port
+ip link set dev eth1 master br0 # Adds port for VLAN 10.
+ip link set dev eth2 master br0 # Adds the port for VLAN 20
+ip link set dev eth3 master br0 # Adds port for VLAN 30
+
+# ACTIVATION OF ALL INTERFACES
+ip link set dev br0 up
+ip link set dev eth0 up
+ip link set dev eth1 up
+ip link set dev eth2 up
+ip link set dev eth3 up
+
+# CONFIGURATION OF VLAN ON PORTS
+echo "Configurazione VLAN sulle porte dello switch..."
+
+# Configure eth0 as TRUNK port, allowing transit of tagged traffic.
+bridge vlan add vid 10 dev eth0
+bridge vlan add vid 20 dev eth0
+bridge vlan add vid 30 dev eth0
+
+# Configure eth1 as the ACCESS port for VLAN 10.
+# 'pvid 10' sets the native VLAN. 'untagged' ensures that traffic
+# to and from client_public on this port is untagged.
+bridge vlan add vid 10 dev eth1 pvid 10 untagged
+
+# Configura eth2 come ACCESS port per la VLAN 20 (DMZ)
+bridge vlan add vid 20 dev eth2 pvid 20 untagged
+
+# Configure eth3 as the ACCESS port for VLAN 30 (Private).
+bridge vlan add vid 30 dev eth3 pvid 30 untagged
+
+# Confirmation message
+echo "Switch configurato con successo come bridge VLAN-aware"
+
+# --------------------------------------------------------------------
+# Per ispezionare la configurazione del bridge:
+# ip -d link show br0
+# bridge vlan show
+# --------------------------------------------------------------------

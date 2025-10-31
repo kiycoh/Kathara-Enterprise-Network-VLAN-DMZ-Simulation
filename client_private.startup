@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# --------------------------------------------------------------------
+# CONFIGURATION SCRIPT: PRIVATE CLIENT
+#
+# The script configures the client in the enterprise private network.
+# It runs automatically when the Kathara container is started.
+#
+# ROLE: Represents an internal enterprise workstation.
+# NETWORK: 172.16.1.0/24 (VLAN 30 Private).
+# IP: 172.16.1.10/24
+# GATEWAY: 172.16.1.1 (router).
+# --------------------------------------------------------------------
+
+# Configure the network interface eth0.
+# Assign the static IP address to the private client.
+ip addr add 172.16.1.10/24 dev eth0
+
+# Network interface activation.
+ip link set eth0 up
+
+# Default gateway configuration.
+# All traffic to external networks is forwarded to the router (172.16.1.1).
+ip route add default via 172.16.1.1
+
+# Confirmation message
+echo "Client Private configurato con IP 172.16.1.10"
+
+# --------------------------------------------------------------------
+# PRIVATE CLIENT NETWORK CAPACITY:
+# Can access the web server in the DMZ (10.0.1.10:80).
+# Can access the public network (203.0.113.0/24).
+# Cannot receive traffic from the DMZ (one-way protection).
+# CANNOT receive traffic from the public network (isolation)
+# --------------------------------------------------------------------
